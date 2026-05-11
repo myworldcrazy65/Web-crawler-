@@ -8,8 +8,10 @@ from nltk.corpus import stopwords
 import spacy
 from urllib.parse import urlparse
 import time
+import sys
+import os
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='templates')
 
 # Download required NLTK data
 try:
@@ -26,9 +28,9 @@ except LookupError:
 try:
     nlp = spacy.load("en_core_web_sm")
 except OSError:
-    print("Downloading spaCy model...")
+    print("Downloading spaCy model (this may take a minute)...")
     import subprocess
-    subprocess.run(["python", "-m", "spacy", "download", "en_core_web_sm"])
+    subprocess.run([sys.executable, "-m", "spacy", "download", "en_core_web_sm"])
     nlp = spacy.load("en_core_web_sm")
 
 class NLPSearcher:
@@ -178,4 +180,7 @@ def health():
     return jsonify({'status': 'OK'}), 200
 
 if __name__ == '__main__':
-    app.run(debug=True, host='127.0.0.1', port=5000)
+    # For exe, disable debug mode
+    is_exe = getattr(sys, 'frozen', False)
+    debug_mode = not is_exe
+    app.run(debug=debug_mode, host='127.0.0.1', port=5000)
