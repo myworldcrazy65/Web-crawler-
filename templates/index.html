@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NLP Web Crawler - Smart Search Engine</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .search-box {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+
+        .search-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 15px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            padding: 15px 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-weight: bold;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            color: white;
+            font-size: 1.1em;
+            margin: 20px 0;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .results-container {
+            display: none;
+        }
+
+        .result {
+            background: white;
+            padding: 25px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .result:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+
+        .result-title {
+            color: #667eea;
+            font-size: 1.3em;
+            margin-bottom: 10px;
+            text-decoration: none;
+        }
+
+        .result-title:hover {
+            text-decoration: underline;
+        }
+
+        .result-source {
+            color: #999;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
+
+        .result-snippet {
+            color: #666;
+            margin-bottom: 10px;
+            font-size: 0.95em;
+            line-height: 1.6;
+        }
+
+        .result-summary {
+            background: #f5f5f5;
+            padding: 15px;
+            border-left: 4px solid #667eea;
+            margin: 15px 0;
+            border-radius: 5px;
+            color: #333;
+            font-size: 0.95em;
+            line-height: 1.6;
+        }
+
+        .result-summary strong {
+            color: #667eea;
+        }
+
+        .result-url {
+            color: #667eea;
+            font-size: 0.9em;
+            word-break: break-all;
+        }
+
+        .error-message {
+            background: #ff6b6b;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .result-count {
+            color: white;
+            text-align: center;
+            font-size: 1.1em;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 600px) {
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .search-container {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 NLP Web Crawler</h1>
+            <p>Smart Search Engine using NLP & DuckDuckGo</p>
+        </div>
+
+        <div class="search-box">
+            <div class="error-message" id="errorMessage"></div>
+            
+            <div class="search-container">
+                <input 
+                    type="text" 
+                    id="searchQuery" 
+                    placeholder="Enter your search query..." 
+                    autofocus
+                >
+                <button onclick="search()">Search</button>
+            </div>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Searching and analyzing results...</p>
+        </div>
+
+        <div class="results-container" id="resultsContainer">
+            <div class="result-count" id="resultCount"></div>
+            <div id="results"></div>
+        </div>
+    </div>
+
+    <script>
+        const searchInput = document.getElementById('searchQuery');
+        const resultsContainer = document.getElementById('resultsContainer');
+        const resultsDiv = document.getElementById('results');
+        const loadingDiv = document.getElementById('loading');
+        const errorMessage = document.getElementById('errorMessage');
+
+        // Allow Enter key to search
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                search();
+            }
+        });
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+            resultsContainer.style.display = 'none';
+            loadingDiv.style.display = 'none';
+        }
+
+        function hideError() {
+            errorMessage.style.display = 'none';
+        }
+
+        function search() {
+            const query = searchInput.value.trim();
+
+            if (!query) {
+                showError('Please enter a search query');
+                return;
+            }
+
+            hideError();
+            loadingDiv.style.display = 'block';
+            resultsContainer.style.display = 'none';
+
+            fetch('/search', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ query: query })
+            })
+            .then(response => response.json())
+            .then(data => {
+                loadingDiv.style.display = 'none';
+
+                if (data.success) {
+                    displayResults(data);
+                } else {
+                    showError(data.error || 'An error occurred');
+                }
+            })
+            .catch(error => {
+                loadingDiv.style.display = 'none';
+                showError('Error: ' + error.message);
+            });
+        }
+
+        function displayResults(data) {
+            resultsDiv.innerHTML = '';
+            
+            const resultCount = document.getElementById('resultCount');
+            resultCount.textContent = `Found ${data.count} results for "${data.query}"`;
+
+            data.results.forEach((result, index) => {
+                const resultDiv = document.createElement('div');
+                resultDiv.className = 'result';
+                resultDiv.innerHTML = `
+                    <a href="${result.url}" target="_blank" class="result-title">${result.title}</a>
+                    <div class="result-source">📍 ${result.source}</div>
+                    <div class="result-snippet">${result.snippet}</div>
+                    <div class="result-summary">
+                        <strong>📝 Summary:</strong><br>
+                        ${result.summary}
+                    </div>
+                    <div class="result-url">🔗 ${result.url}</div>
+                `;
+                resultsDiv.appendChild(resultDiv);
+            });
+
+            resultsContainer.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
